@@ -20,6 +20,8 @@ If you're using the code or analysis used in this repository consider citing our
 ## Packages
 In the directory code there's a file with the packages and versions used for this manuscript. Follow the steps below installing a conda environment and replicating all the results.
 
+## Replicating the paper
+We provide Jupyter notebooks to replicate what would you need to create the Figure in the main manuscript. They follow the names FigureX.ipynb for x $\in [1,\text{Number of Figures}]$. Aditionally we provide examples on how to use the agent based model and the basic structure of the data use to track the movement of the patients.
 
 ## License 
 
