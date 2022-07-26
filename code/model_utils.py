@@ -37,7 +37,6 @@ def model(patients_state, gamma, beta, alpha_ens, movement_date, ward2size, ward
         prob_patients                    = np.where(patients_state!=0)
         patients_state[prob_patients]    = np.random.random(size=(prob_patients[0].shape)) <= patients_state[prob_patients]
 
-    imported_patients      = patients_state[new_patients, :]
 
     ward_colonized        = np.full((num_wards, num_ensembles), np.nan)
     ward_nosocomial       = np.full((num_wards, num_ensembles), np.nan)
