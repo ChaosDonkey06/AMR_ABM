@@ -166,9 +166,7 @@ def model_inference(patients_state, γ, β, α, movement, ward2size, ward2cluste
     p_status[prob_patients[0], prob_patients[1]] = np.random.random(size=(prob_patients[0].shape)) <= p_status[prob_patients[0], prob_patients[1]]
     patients_state                               = p_status.copy()
 
-
-    patients_state_tested = ρ * patients_state
-
+    patients_state_tested     = ρ * patients_state
     patients_state_tested     = np.random.random(size=(num_patients, num_ensembles)) <=  patients_state_tested
     patients_state_not_tested = patients_state-patients_state_tested
 
