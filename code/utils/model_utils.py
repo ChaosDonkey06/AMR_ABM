@@ -104,7 +104,7 @@ def model(patients_state, γ, β, α, movement, ward2size, ward2cluster=None, ρ
     return patients_state,  ward_colonized, ward_nosocomial, ward_imported, ward_positive, ward_chunk_colonized, ward_chunk_nosocomial, ward_chunk_imported, ward_chunk_positive, ward_negative, ward_chunk_negative
 
 
-def model_inference(patients_state, γ, β, α, movement, ward2size, ward2cluster, se=6/100):
+def model_inference(patients_state, γ, β, α, movement, ward2size, ward2cluster, ρ=6/100):
     """[summary]
 
     Args:
@@ -167,7 +167,7 @@ def model_inference(patients_state, γ, β, α, movement, ward2size, ward2cluste
     patients_state                               = p_status.copy()
 
 
-    patients_state_tested = se * patients_state
+    patients_state_tested = ρ * patients_state
 
     patients_state_tested     = np.random.random(size=(num_patients, num_ensembles)) <=  patients_state_tested
     patients_state_not_tested = patients_state-patients_state_tested
@@ -186,7 +186,6 @@ def model_inference(patients_state, γ, β, α, movement, ward2size, ward2cluste
 
     return patients_state, ward_positive, cluster_positive, ward_negative, cluster_negative
 
-
 def simulate_model(movement_data, ward2size, ward2community, θ, abm_settings, model=model):
     """ Simulate model using point parameters in param_dict.
 
@@ -195,7 +194,7 @@ def simulate_model(movement_data, ward2size, ward2community, θ, abm_settings, m
         movement_data  : _description_
         ward2size      : _description_
         ward2community : _description_
-        θ              : _description_
+        θ              : Parameters dict
         abm_settings   : _description_
 
     Returns:
@@ -214,15 +213,14 @@ def simulate_model(movement_data, ward2size, ward2community, θ, abm_settings, m
     ward_nosocomial         = np.full((len(abm_settings["dates"] ),  abm_settings["num_wards"], abm_settings["num_ensembles"]), np.nan)
     ward_colonized_imported = np.full((len(abm_settings["dates"] ),  abm_settings["num_wards"], abm_settings["num_ensembles"]), np.nan)
 
-    cluster_positive           = np.full((len(abm_settings["dates"] ),  abm_settings["num_wards_chunks"], abm_settings["num_ensembles"]), np.nan)
-    cluster_colonized          = np.full((len(abm_settings["dates"] ),  abm_settings["num_wards_chunks"], abm_settings["num_ensembles"]), np.nan)
-    cluster_nosocomial         = np.full((len(abm_settings["dates"] ),  abm_settings["num_wards_chunks"], abm_settings["num_ensembles"]), np.nan)
-    cluster_colonized_imported = np.full((len(abm_settings["dates"] ),  abm_settings["num_wards_chunks"], abm_settings["num_ensembles"]), np.nan)
+    cluster_positive           = np.full((len(abm_settings["dates"] ),  abm_settings["num_clusters"], abm_settings["num_ensembles"]), np.nan)
+    cluster_colonized          = np.full((len(abm_settings["dates"] ),  abm_settings["num_clusters"], abm_settings["num_ensembles"]), np.nan)
+    cluster_nosocomial         = np.full((len(abm_settings["dates"] ),  abm_settings["num_clusters"], abm_settings["num_ensembles"]), np.nan)
+    cluster_colonized_imported = np.full((len(abm_settings["dates"] ),  abm_settings["num_clusters"], abm_settings["num_ensembles"]), np.nan)
 
-    ward_negative                 = np.full((len(abm_settings["dates"] ),  abm_settings["num_wards"], abm_settings["num_ensembles"]), np.nan)
-    cluster_negative           = np.full((len(abm_settings["dates"] ),  abm_settings["num_wards_chunks"], abm_settings["num_ensembles"]), np.nan)
-
-    patients_state         = np.zeros((abm_settings["num_patients"], abm_settings["num_ensembles"]))
+    ward_negative              = np.full((len(abm_settings["dates"] ),  abm_settings["num_wards"], abm_settings["num_ensembles"]), np.nan)
+    cluster_negative           = np.full((len(abm_settings["dates"] ),  abm_settings["num_clusters"], abm_settings["num_ensembles"]), np.nan)
+    patients_state             = np.zeros((abm_settings["num_patients"], abm_settings["num_ensembles"]))
 
     for i_d, date in tqdm(enumerate(list(abm_settings["dates"] ))):
         movement_date = movement_data.loc[date]
@@ -230,4 +228,4 @@ def simulate_model(movement_data, ward2size, ward2community, θ, abm_settings, m
         patients_state, ward_colonized[i_d,:], ward_nosocomial[i_d,:], ward_colonized_imported[i_d,:], ward_positive[i_d,:], cluster_colonized[i_d,:], \
             cluster_nosocomial[i_d], cluster_colonized_imported[i_d,:], cluster_positive[i_d,:], ward_negative[i_d, :], cluster_negative[i_d,:] = model(patients_state, γ_ens, β_ens, α_ens, movement_date, ward2size, ward2community)
 
-    return ward_colonized, ward_nosocomial, ward_colonized_imported, ward_positive, cluster_colonized, cluster_nosocomial, cluster_colonized_imported, cluster_positive, ward_negative, cluster_negative
+    return ward_colonized, ward_nosocomial, ward_colonized_imported, ward_positive, ward_negative, cluster_colonized, cluster_nosocomial, cluster_colonized_imported, cluster_positive, cluster_negative

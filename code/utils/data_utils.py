@@ -54,3 +54,11 @@ def load_movement_df(path_to_movement_data, return_ward=False):
         movement_df               = movement_df[["first_day", "cluster_id", "ward_id", "mrn_id", "test", "specimen", "specimen_group", "organism_name", "organism_id"]]
 
     return movement_df, ward2community
+
+
+def ward2size(movement_dataframe):
+    wrd_size_df = movement_dataframe.reset_index()
+    wrd_size_df["num_patients"] = 1
+    wrd_size_df = wrd_size_df.groupby(["date", "ward", "ward_id"]).sum()[["num_patients"]].reset_index().drop(columns=["date"])
+    wrd_size_df = wrd_size_df.groupby(["ward", "ward_id"]).mean().reset_index().sort_values(by="num_patients")
+    return wrd_size_df

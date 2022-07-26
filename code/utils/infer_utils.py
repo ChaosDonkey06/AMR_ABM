@@ -53,31 +53,24 @@ def random_walk_perturbation(param, param_std, num_params, n_ens):
 def inflate_ensembles(ens, inflation_value=1.2, n_ens=300):
     return np.mean(ens,1, keepdims=True)*np.ones((1,n_ens)) + inflation_value*(ens-np.mean(ens,1, keepdims=True)*np.ones((1,n_ens)))
 
-def checkbound_params(dict_params_range, params_ens):
+def checkbound_params(params_range, params_ens):
     params_update = []
-    for idx_p, p in enumerate(dict_params_range.keys()):
-        loww = dict_params_range[p][0]
-        upp  = dict_params_range[p][1]
-
-        p_ens = params_ens[idx_p, :].copy()
-
+    for idx_p, p in enumerate(params_range.keys()):
+        loww           = params_range[p][0]
+        upp            = params_range[p][1]
+        p_ens          = params_ens[idx_p, :].copy()
         idx_wrong      = np.where(np.logical_or(p_ens <loww, p_ens > upp))[0]
-
         idx_wrong_loww = np.where(p_ens < loww)[0]
         idx_wrong_upp  = np.where(p_ens > upp)[0]
-
-        idx_good  = np.where(np.logical_or(p_ens >=loww, p_ens <= upp))[0]
-
+        idx_good       = np.where(np.logical_or(p_ens >=loww, p_ens <= upp))[0]
         p_ens[idx_wrong] = np.median(p_ens[idx_good])
-
         np.put(p_ens, idx_wrong_loww, loww * (1+0.2*np.random.rand( idx_wrong_loww.shape[0])) )
         np.put(p_ens, idx_wrong_upp, upp * (1-0.2*np.random.rand( idx_wrong_upp.shape[0])) )
-
         params_update.append(p_ens)
 
     return np.array(params_update)
 
-def eakf_step_multi_obs(params_prior, obs_ens_time, obs_time, oev_time, dict_params_range, num_obs=6):
+def eakf_step_multi_obs(params_prior, obs_ens_time, obs_time, oev_time, params_range, num_obs=6):
     prior_mean_ct = obs_ens_time.mean(-1, keepdims=True) # Average over ensemble member
     prior_var_ct  = obs_ens_time.var(-1, keepdims=True)  # Compute variance over ensemble members
 
@@ -90,20 +83,18 @@ def eakf_step_multi_obs(params_prior, obs_ens_time, obs_time, oev_time, dict_par
     dy           = post_mean_ct + alpha*( obs_ens_time - prior_mean_ct ) - obs_ens_time
 
     # adjust parameters
-    rr = np.full((len(dict_params_range), num_obs), np.nan)
-    dx = np.full((len(dict_params_range) , obs_ens_time.shape[-1], num_obs), np.nan)
+    rr = np.full((len(params_range), num_obs), np.nan)
+    dx = np.full((len(params_range) , obs_ens_time.shape[-1], num_obs), np.nan)
 
     for idx_obs in range(num_obs):
-        for idx_p, p in enumerate(dict_params_range.keys()):
+        for idx_p, p in enumerate(params_range.keys()):
             A = np.cov(params_prior[idx_p,:], obs_ens_time[idx_obs])
             rr[idx_p, idx_obs] =  A[1,0] / prior_var_ct[idx_obs]
         dx[:, :, idx_obs] =  np.dot( np.expand_dims(rr[:, idx_obs],-1), np.expand_dims(dy[idx_obs,:], 0) )
     mean_dy = dy.mean(0)  # Average over observation space
     mean_dx = dx.mean(-1)
-
     param_post = params_prior + mean_dx
     obs_post   = obs_ens_time + mean_dy
-
     return param_post, obs_post
 
 def geometric_cooling(num_iteration_if, cooling_factor=0.9):
@@ -114,42 +105,35 @@ def hyperbolic_cooling(num_iteration_if, cooling_factor=0.9):
     alphas = 1/(1+cooling_factor*np.arange(num_iteration_if))
     return alphas
 
-
 def cooling(num_iteration_if, type_cool="geometric", cooling_factor=0.9):
     if type_cool=="geometric":
         return geometric_cooling(num_iteration_if, cooling_factor=cooling_factor)
     elif type_cool=="hyperbolic":
         return hyperbolic_cooling(num_iteration_if, cooling_factor=cooling_factor)
 
-def sample_params_uniform(dict_params_range, num_ensembles=100):
+def sample_params_uniform(params_range, num_ensembles=100):
     param_ens_prior = []
-    for p in dict_params_range.keys():
-        param_ens_prior.append( np.random.uniform( dict_params_range[p][0], dict_params_range[p][1]  , size=num_ensembles) )
+    for p in params_range.keys():
+        param_ens_prior.append( np.random.uniform( params_range[p][0], params_range[p][1]  , size=num_ensembles) )
     return np.array( param_ens_prior )
 
-# np.random.triangular(left, mode, right, size=num_ensembles)
-
-
-def sample_params_triangular(dict_params_range, truth_dict, num_ensembles=100):
+def sample_params_triangular(params_range, truth_dict, num_ensembles=100):
     param_ens_prior = []
-    for p in dict_params_range.keys():
-        #param_ens_prior.append( np.random.uniform( dict_params_range[p][0], dict_params_range[p][1]  , size=num_ensembles) )
-        lloww = dict_params_range[p][0]
-        hhigg = dict_params_range[p][1]
-        param_ens_prior.append(  np.random.triangular(lloww, np.minimum( truth_dict[p] + np.abs(np.random.rand())*(hhigg-lloww)/2, hhigg) , hhigg,  size=num_ensembles) )
+    for p in params_range.keys():
+        loww = params_range[p][0]
+        upp  = params_range[p][1]
+        param_ens_prior.append(  np.random.triangular(loww, np.minimum( truth_dict[p] + np.abs(np.random.rand())*(upp-loww)/2, upp) , upp,  size=num_ensembles) )
 
     return np.array( param_ens_prior )
 
 def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
     return truncnorm( (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd )
 
-def sample_params_normal(dict_params_range, params_mean, params_var, num_ensembles=300):
+def sample_params_normal(params_range, params_mean, params_var, num_ensembles=300):
     param_ens_prior = []
-    for idx_p, p in enumerate(dict_params_range.keys()):
-        norm_gen = get_truncated_normal(mean=params_mean[idx_p], sd=params_var[idx_p]**(1/2), low=dict_params_range[p][0], upp=dict_params_range[p][1])
-
+    for idx_p, p in enumerate(params_range.keys()):
+        norm_gen = get_truncated_normal(mean=params_mean[idx_p], sd=params_var[idx_p]**(1/2), low=params_range[p][0], upp=params_range[p][1])
         param_ens_prior.append( norm_gen.rvs(num_ensembles) )
-
     return np.array( param_ens_prior )
 
 def compute_oev(obs_vec, var_obs=0.2):
