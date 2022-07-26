@@ -39,25 +39,25 @@ def model(patients_state, γ, β, α, movement, ward2size, ward2cluster=None, ρ
         patients_state[prob_patients]    = np.random.random(size=(prob_patients[0].shape)) <= patients_state[prob_patients]
 
 
-    ward_colonized        = np.full((num_wards, num_ensembles), np.nan)
-    ward_nosocomial       = np.full((num_wards, num_ensembles), np.nan)
-    ward_imported         = np.full((num_wards, num_ensembles), np.nan)
-    ward_positive         = np.full((num_wards, num_ensembles), np.nan)
-    ward_negative         = np.full((num_wards, num_ensembles), np.nan)
+    ward_colonized        = np.zeros((num_wards, num_ensembles))
+    ward_nosocomial       = np.zeros((num_wards, num_ensembles))
+    ward_imported         = np.zeros((num_wards, num_ensembles))
+    ward_positive         = np.zeros((num_wards, num_ensembles))
+    ward_negative         = np.zeros((num_wards, num_ensembles))
 
-    num_clusters          = len(set(list(ward2cluster.values())))
-    ward_chunk_colonized  = np.full((num_clusters, num_ensembles), np.nan )
-    ward_chunk_nosocomial = np.full((num_clusters, num_ensembles), np.nan )
-    ward_chunk_imported   = np.full((num_clusters, num_ensembles), np.nan )
-    ward_chunk_positive   = np.full((num_clusters, num_ensembles), np.nan )
-    ward_chunk_negative   = np.full((num_clusters, num_ensembles), np.nan )
+    num_clusters       = len(set(list(ward2cluster.values())))
+    cluster_colonized  = np.zeros((num_clusters, num_ensembles))
+    cluster_nosocomial = np.zeros((num_clusters, num_ensembles))
+    cluster_imported   = np.zeros((num_clusters, num_ensembles))
+    cluster_positive   = np.zeros((num_clusters, num_ensembles))
+    cluster_negative   = np.zeros((num_clusters, num_ensembles))
 
     for _, ward_id in enumerate(active_wards):
         active_patients_new_ward  = active_p_df[active_p_df.ward_id==ward_id]#["mrn_id"].values
         active_patients_new_ward  = active_patients_new_ward[active_patients_new_ward.first_day==True]["mrn_id"].values
 
-        ward_chunk_imported[ward2cluster[ward_id], :] += np.sum(patients_state[active_patients_new_ward, :], axis=0)
-        ward_imported[ward_id, :]                              += np.sum(patients_state[active_patients_new_ward, :], axis=0)
+        cluster_imported[ward2cluster[ward_id], :] += np.sum(patients_state[active_patients_new_ward, :], axis=0)
+        ward_imported[ward_id, :]                     += np.sum(patients_state[active_patients_new_ward, :], axis=0)
 
     patients_state    = patients_state.copy()
     imported_patients = patients_state.copy()
@@ -86,22 +86,22 @@ def model(patients_state, γ, β, α, movement, ward2size, ward2cluster=None, ρ
 
         chunk_id = ward2cluster[ward_id]
 
-        ward_chunk_colonized[chunk_id, :]  += np.sum(patients_state[active_patients_new_ward, :], axis=0)
+        cluster_colonized[chunk_id, :]  += np.sum(patients_state[active_patients_new_ward, :], axis=0)
         ward_colonized[ward_id, :]         += np.sum(patients_state[active_patients_new_ward, :], axis=0)
 
-        ward_chunk_nosocomial[chunk_id, :] += np.sum(patients_state[active_patients_new_ward, :]-imported_patients[active_patients_new_ward, :], axis=0)
+        cluster_nosocomial[chunk_id, :] += np.sum(patients_state[active_patients_new_ward, :]-imported_patients[active_patients_new_ward, :], axis=0)
         ward_nosocomial[ward_id, :]        += np.sum(patients_state[active_patients_new_ward, :]-imported_patients[active_patients_new_ward, :], axis=0)
 
         active_patients_new_ward           = active_p_df[active_p_df.ward_id==ward_id]
         active_patients_detected_ward      = active_patients_new_ward[active_patients_new_ward.test==True]["mrn_id"].values
 
-        ward_chunk_positive[chunk_id, :]   += np.sum(patients_state_tested[active_patients_detected_ward, :], axis=0)
+        cluster_positive[chunk_id, :]   += np.sum(patients_state_tested[active_patients_detected_ward, :], axis=0)
         ward_positive[ward_id, :]          += np.sum(patients_state_tested[active_patients_detected_ward, :], axis=0)
 
-        ward_chunk_negative[chunk_id, :]   += np.sum(patients_state_not_tested[active_patients_detected_ward, :], axis=0)
+        cluster_negative[chunk_id, :]   += np.sum(patients_state_not_tested[active_patients_detected_ward, :], axis=0)
         ward_negative[ward_id, :]          += np.sum(patients_state_not_tested[active_patients_detected_ward, :], axis=0)
 
-    return patients_state,  ward_colonized, ward_nosocomial, ward_imported, ward_positive, ward_chunk_colonized, ward_chunk_nosocomial, ward_chunk_imported, ward_chunk_positive, ward_negative, ward_chunk_negative
+    return patients_state,  ward_colonized, ward_nosocomial, ward_imported, ward_positive, ward_negative, cluster_colonized, cluster_nosocomial, cluster_imported, cluster_positive, cluster_negative
 
 
 def model_inference(patients_state, γ, β, α, movement, ward2size, ward2cluster, ρ=6/100):
@@ -225,7 +225,33 @@ def simulate_model(movement_data, ward2size, ward2community, θ, abm_settings, m
     for i_d, date in tqdm(enumerate(list(abm_settings["dates"] ))):
         movement_date = movement_data.loc[date]
 
-        patients_state, ward_colonized[i_d,:], ward_nosocomial[i_d,:], ward_colonized_imported[i_d,:], ward_positive[i_d,:], cluster_colonized[i_d,:], \
-            cluster_nosocomial[i_d], cluster_colonized_imported[i_d,:], cluster_positive[i_d,:], ward_negative[i_d, :], cluster_negative[i_d,:] = model(patients_state, γ_ens, β_ens, α_ens, movement_date, ward2size, ward2community, ρ=ρ)
+        patients_state, ward_colonized[i_d,:], ward_nosocomial[i_d,:], ward_colonized_imported[i_d,:], ward_positive[i_d,:], ward_negative[i_d,:], cluster_colonized[i_d,:], \
+            cluster_nosocomial[i_d,:], cluster_colonized_imported[i_d,:], cluster_positive[i_d,:], cluster_negative[i_d,:] = model(patients_state, γ_ens, β_ens, α_ens, movement_date, ward2size, ward2community, ρ=ρ)
 
     return ward_colonized, ward_nosocomial, ward_colonized_imported, ward_positive, ward_negative, cluster_colonized, cluster_nosocomial, cluster_colonized_imported, cluster_positive, cluster_negative
+
+
+def create_obs_infer(cluster_positive, cluster_negative, abm_settings, if2_settings):
+    # Create ward chunks level observations
+    obs_chunk_df         = pd.DataFrame(columns=["date"] + [f"pos_{idx_chunk}" for idx_chunk in range(abm_settings["num_clusters"])])
+    obs_chunk_df["date"] = abm_settings["dates"]
+
+    neg_chunk_df         = pd.DataFrame(columns=["date"] + [f"pos_{idx_chunk}" for idx_chunk in range(abm_settings["num_clusters"])])
+    neg_chunk_df["date"] = abm_settings["dates"]
+
+    for idx_chunk in range(abm_settings["num_clusters"]):
+        obs_chunk_df[f"pos_{idx_chunk}"] = cluster_positive[:, idx_chunk]
+        neg_chunk_df[f"pos_{idx_chunk}"] = cluster_negative[:, idx_chunk]
+
+    # Resample every week
+    obs_w_chunk_df         = obs_chunk_df.set_index("date").resample("W-Sun").sum()
+    neg_w_chunk_df         = neg_chunk_df.set_index("date").resample("W-Sun").sum()
+
+    for idx_chunk in range(abm_settings["num_clusters"]):
+        obs_w_chunk_df[f"oev_{idx_chunk}"]  = compute_oev(obs_w_chunk_df[f"pos_{idx_chunk}"], var_obs=if2_settings['oev_variance'])
+        obs_w_chunk_df[f"oev_{idx_chunk}"]  = np.minimum(obs_w_chunk_df[f"oev_{idx_chunk}"], 50*7)
+
+        neg_w_chunk_df[f"oev_{idx_chunk}"]  = compute_oev(neg_w_chunk_df[f"pos_{idx_chunk}"], var_obs=if2_settings['oev_variance'])
+        neg_w_chunk_df[f"oev_{idx_chunk}"]  = np.minimum(neg_w_chunk_df[f"oev_{idx_chunk}"], 50*7)
+
+    return obs_w_chunk_df, neg_w_chunk_df

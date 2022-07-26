@@ -56,13 +56,13 @@ def inflate_ensembles(ens, inflation_value=1.2, n_ens=300):
 def checkbound_params(params_range, params_ens):
     params_update = []
     for idx_p, p in enumerate(params_range.keys()):
-        loww           = params_range[p][0]
-        upp            = params_range[p][1]
-        p_ens          = params_ens[idx_p, :].copy()
-        idx_wrong      = np.where(np.logical_or(p_ens <loww, p_ens > upp))[0]
-        idx_wrong_loww = np.where(p_ens < loww)[0]
-        idx_wrong_upp  = np.where(p_ens > upp)[0]
-        idx_good       = np.where(np.logical_or(p_ens >=loww, p_ens <= upp))[0]
+        loww             = params_range[p][0]
+        upp              = params_range[p][1]
+        p_ens            = params_ens[idx_p, :].copy()
+        idx_wrong        = np.where(np.logical_or(p_ens <loww, p_ens > upp))[0]
+        idx_wrong_loww   = np.where(p_ens < loww)[0]
+        idx_wrong_upp    = np.where(p_ens > upp)[0]
+        idx_good         = np.where(np.logical_or(p_ens >=loww, p_ens <= upp))[0]
         p_ens[idx_wrong] = np.median(p_ens[idx_good])
         np.put(p_ens, idx_wrong_loww, loww * (1+0.2*np.random.rand( idx_wrong_loww.shape[0])) )
         np.put(p_ens, idx_wrong_upp, upp * (1-0.2*np.random.rand( idx_wrong_upp.shape[0])) )
@@ -91,8 +91,8 @@ def eakf_step_multi_obs(params_prior, obs_ens_time, obs_time, oev_time, params_r
             A = np.cov(params_prior[idx_p,:], obs_ens_time[idx_obs])
             rr[idx_p, idx_obs] =  A[1,0] / prior_var_ct[idx_obs]
         dx[:, :, idx_obs] =  np.dot( np.expand_dims(rr[:, idx_obs],-1), np.expand_dims(dy[idx_obs,:], 0) )
-    mean_dy = dy.mean(0)  # Average over observation space
-    mean_dx = dx.mean(-1)
+    mean_dy    = dy.mean(0)  # Average over observation space
+    mean_dx    = dx.mean(-1)
     param_post = params_prior + mean_dx
     obs_post   = obs_ens_time + mean_dy
     return param_post, obs_post
@@ -123,7 +123,6 @@ def sample_params_triangular(params_range, truth_dict, num_ensembles=100):
         loww = params_range[p][0]
         upp  = params_range[p][1]
         param_ens_prior.append(  np.random.triangular(loww, np.minimum( truth_dict[p] + np.abs(np.random.rand())*(upp-loww)/2, upp) , upp,  size=num_ensembles) )
-
     return np.array( param_ens_prior )
 
 def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
