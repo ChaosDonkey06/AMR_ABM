@@ -2,7 +2,7 @@
 import pandas as pd
 import os
 
-def load_movement_df(path_to_movement_data):
+def load_movement_df(path_to_movement_data, return_ward=False):
     date_min         = pd.to_datetime("2020-02-01")
     date_max         = pd.to_datetime("2021-02-28")
     dates_simulation = pd.date_range(start=date_min, end=date_max)
@@ -46,6 +46,11 @@ def load_movement_df(path_to_movement_data):
     ward2community              = {r.ward_id: r.community for idx, r in ward2community.iterrows()}
 
     movement_df["cluster_id"] = movement_df["ward_id"].map(ward2community)
-    movement_df               = movement_df[["first_day", "cluster_id", "ward_id", "mrn_id", "test", "specimen", "specimen_group", "organism_name", "organism_id"]]
+
+    if return_ward:
+        movement_df               = movement_df[['ward', "first_day", "cluster_id", "ward_id", "mrn_id", "test", "specimen", "specimen_group", "organism_name", "organism_id"]]
+
+    else:
+        movement_df               = movement_df[["first_day", "cluster_id", "ward_id", "mrn_id", "test", "specimen", "specimen_group", "organism_name", "organism_id"]]
 
     return movement_df, ward2community
