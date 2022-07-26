@@ -1,10 +1,19 @@
 
 import matplotlib.pyplot as plt
+import numpy as np
 
-#%% Plot Tong's default setting
-SMALL_SIZE  = 22
-MEDIUM_SIZE = 22
-BIGGER_SIZE = 22
+
+from matplotlib.dates import date2num, num2date
+from matplotlib.colors import ListedColormap
+from matplotlib import dates as mdates
+from matplotlib.patches import Patch
+from matplotlib import pyplot as plt
+from matplotlib import ticker
+
+# Plot Tong's default setting
+SMALL_SIZE  = 28
+MEDIUM_SIZE = 28
+BIGGER_SIZE = 28
 
 plt.rc('font', size=SMALL_SIZE, family='sans-serif', serif='Arial')          # controls default text sizes
 plt.rc('axes', titlesize=BIGGER_SIZE)     # fontsize of the axes title
@@ -45,6 +54,15 @@ def figure_size_setting(WIDTH):
     fig_height_in = fig_width_in * golden_ratio   # figure height in inches
     fig_dims    = [fig_width_in, fig_height_in]   # fig dims as a list
     return fig_dims
+
+def format_axis(ax, week=True):
+    ax.tick_params(which='both', axis='x', labelrotation=90)
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b-%y'))
+    if week:
+        ax.xaxis.set_minor_locator(mdates.WeekdayLocator())
+    ax.xaxis.set_major_locator(mdates.MonthLocator())
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
 
 def plot_convergence_plots(theta, params_df, param_label, prior_range, num_params=2, num_iter_if=50, title=None, path_to_save = None):
     fig, ax = plt.subplots(num_params, 1, figsize=(15.5, 12.2), sharex=True)
