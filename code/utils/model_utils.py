@@ -30,6 +30,7 @@ def model(patients_state, γ, β, α, movement, ward2size, ward2cluster=None, ρ
 
     γ_ens = γ
     β_ens = β
+    α_ens = α
 
     if new_patients.shape[0]>0:
         patients_state[new_patients, :]   = np.ones(shape=(new_patients.shape[0], 1)) * γ_ens
@@ -51,8 +52,7 @@ def model(patients_state, γ, β, α, movement, ward2size, ward2cluster=None, ρ
     ward_chunk_positive   = np.full((num_clusters, num_ensembles), np.nan )
     ward_chunk_negative   = np.full((num_clusters, num_ensembles), np.nan )
 
-    # compute total imported patients to respective wards
-    for _, ward_id in active_wards:
+    for _, ward_id in enumerate(active_wards):
         active_patients_new_ward  = active_p_df[active_p_df.ward_id==ward_id]#["mrn_id"].values
         active_patients_new_ward  = active_patients_new_ward[active_patients_new_ward.first_day==True]["mrn_id"].values
 
@@ -204,6 +204,8 @@ def simulate_model(movement_data, ward2size, ward2community, θ, abm_settings, m
     α_ens     = np.random.uniform( 1/365, 1/175, size=(abm_settings["num_patients"], abm_settings["num_ensembles"]))
     γ_truth   = θ["γ"]
     β_truth   = θ["β"]
+    ρ         = θ["ρ"]
+
 
     γ_ens  = np.ones((1, abm_settings["num_ensembles"])) * γ_truth
     β_ens  = np.ones((1, abm_settings["num_ensembles"])) * β_truth
@@ -226,6 +228,6 @@ def simulate_model(movement_data, ward2size, ward2community, θ, abm_settings, m
         movement_date = movement_data.loc[date]
 
         patients_state, ward_colonized[i_d,:], ward_nosocomial[i_d,:], ward_colonized_imported[i_d,:], ward_positive[i_d,:], cluster_colonized[i_d,:], \
-            cluster_nosocomial[i_d], cluster_colonized_imported[i_d,:], cluster_positive[i_d,:], ward_negative[i_d, :], cluster_negative[i_d,:] = model(patients_state, γ_ens, β_ens, α_ens, movement_date, ward2size, ward2community)
+            cluster_nosocomial[i_d], cluster_colonized_imported[i_d,:], cluster_positive[i_d,:], ward_negative[i_d, :], cluster_negative[i_d,:] = model(patients_state, γ_ens, β_ens, α_ens, movement_date, ward2size, ward2community, ρ=ρ)
 
     return ward_colonized, ward_nosocomial, ward_colonized_imported, ward_positive, ward_negative, cluster_colonized, cluster_nosocomial, cluster_colonized_imported, cluster_positive, cluster_negative
