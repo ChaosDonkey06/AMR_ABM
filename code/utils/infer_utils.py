@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import datetime
 
-def create_df_response(samples, time, date_init ='2020-03-06',  quantiles = [50, 80, 95], forecast_horizon=27, dates=None, use_future=False):
+def create_df_response(samples, time, date_init ='2020-02-01',  quantiles = [50, 80, 95], forecast_horizon=27, dates=None, use_future=False):
     """[summary]
 
     Args:
