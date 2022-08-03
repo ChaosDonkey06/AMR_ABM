@@ -1,4 +1,9 @@
-def IF2_eakf_ABM(model, pos_obs_df, neg_obs_df, movement_df, param_prior, if2_settings, abm_settings, perturb_time=True):
+from .infer_utils import sample_params_normal, sample_params_uniform, random_walk_perturbation, inflate_ensembles, checkbound_params, eakf_step_multi_obs, cooling
+from tqdm import tqdm
+import pandas as pd
+import numpy as np
+
+def IF2_eakf_ABM(model, pos_obs_df, neg_obs_df, movement_df, param_prior_dict, if2_settings, abm_settings, perturb_time=True):
 
     obs_w_chunk_df = pos_obs_df
     neg_w_chunk_df = neg_obs_df
@@ -70,8 +75,8 @@ def IF2_eakf_ABM(model, pos_obs_df, neg_obs_df, movement_df, param_prior, if2_se
                     p_prior    = random_walk_perturbation(p_prior, std_params, if2_settings["num_params"], if2_settings["num_ensembles"])
 
                 # Inflate parameters
-                p_prior = inflate_ensembles(p_prior, inflation_value=if2_settings["lambda_inf"], num_ensembles=if2_settings["num_ensembles"])
-                p_prior = checkbound_params(param_prior_dict, p_prior, num_ensembles=if2_settings["num_ensembles"])
+                p_prior = inflate_ensembles(p_prior, inflation_value=if2_settings["lambda_inf"])
+                p_prior = checkbound_params(param_prior_dict, p_prior)
 
                 # first adjust using only positives
                 oev_pos    = obs_w_chunk_df.loc[date][[f"oev_{idx_chunk}" for idx_chunk in range(abm_settings["num_clusters"])]].values
@@ -84,10 +89,10 @@ def IF2_eakf_ABM(model, pos_obs_df, neg_obs_df, movement_df, param_prior, if2_se
                 param_post = p_prior.copy()
 
                 param_post, obs_post_pos = eakf_step_multi_obs(param_post, chunk_pos_t, np.expand_dims(pos_time, -1),  np.expand_dims(oev_pos, -1), param_prior_dict, int(if2_settings["num_observations"] )) # Use both positives to adjust
-                param_post               = checkbound_params(param_prior_dict, params_ens=param_post, num_ensembles=if2_settings["num_ensembles"])
+                param_post               = checkbound_params(param_prior_dict, params_ens=param_post)
 
                 param_post, obs_post_neg = eakf_step_multi_obs(param_post, chunk_neg_t, np.expand_dims(neg_time, -1),  np.expand_dims(oev_neg, -1), param_prior_dict, int(if2_settings["num_observations"] )) # Use negatives to adjust
-                param_post               = checkbound_params(param_prior_dict, params_ens=param_post, num_ensembles=if2_settings["num_ensembles"])
+                param_post               = checkbound_params(param_prior_dict, params_ens=param_post)
 
                 obs_post_time_pos[:, :, idx_date_update]    = obs_post_pos
                 obs_post_time_neg[:, :, idx_date_update]    = obs_post_neg
@@ -105,4 +110,4 @@ def IF2_eakf_ABM(model, pos_obs_df, neg_obs_df, movement_df, param_prior, if2_se
         obs_post_all_pos[:,:,:,n] = obs_post_time_pos
         obs_post_all_neg[:,:,:,n] = obs_post_time_neg
 
-    return obs_w_chunk_df, neg_w_chunk_df, obs_post_all_pos, obs_post_all_neg, para_post_all, param_iter, param_mean_iter
+    return obs_post_all_pos, obs_post_all_neg, para_post_all, param_iter, param_mean_iter
