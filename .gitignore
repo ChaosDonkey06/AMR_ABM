@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+*/code/ignore_this
+
+
 *.DS_Store
 *.csv
 # C extensions
