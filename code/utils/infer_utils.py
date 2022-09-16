@@ -90,7 +90,8 @@ def eakf_step_multi_obs(params_prior, obs_ens_time, obs_time, oev_time, params_r
         for idx_p, p in enumerate(params_range.keys()):
             A = np.cov(params_prior[idx_p,:], obs_ens_time[idx_obs])
             rr[idx_p, idx_obs] =  A[1,0] / prior_var_ct[idx_obs]
-        dx[:, :, idx_obs] =  np.dot( np.expand_dims(rr[:, idx_obs],-1), np.expand_dims(dy[idx_obs,:], 0) )
+        dx[:, :, idx_obs]      =  np.dot( np.expand_dims(rr[:, idx_obs],-1), np.expand_dims(dy[idx_obs,:], 0) )
+
     mean_dy    = dy.mean(0)  # Average over observation space
     mean_dx    = dx.mean(-1)
     param_post = params_prior + mean_dx
