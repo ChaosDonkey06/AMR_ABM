@@ -96,6 +96,7 @@ def eakf_step_multi_obs(params_prior, obs_ens_time, obs_time, oev_time, params_r
     mean_dx    = dx.mean(-1)
     param_post = params_prior + mean_dx
     obs_post   = obs_ens_time + mean_dy
+
     return param_post, obs_post
 
 def geometric_cooling(num_iteration_if, cooling_factor=0.9):
